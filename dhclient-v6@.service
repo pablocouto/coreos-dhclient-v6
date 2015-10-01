@@ -1,0 +1,28 @@
+[Unit]
+Description=ISC DHCP client (IPv6)
+After=network-online.target
+Requires=network-online.target
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+
+ExecStartPre=-/usr/bin/docker stop %p.%i.service
+ExecStartPre=-/usr/bin/docker rm %p.%i.service
+ExecStartPre=/usr/bin/docker pull pablocouto/coreos-dhclient-v6
+
+# workaround:
+ExecStartPre=/usr/bin/sleep 2
+
+ExecStart=/usr/bin/docker run --name=%p.%i.service --net=host \
+         --cap-add=NET_ADMIN --cap-add=NET_RAW \
+         -v /dev/log:/dev/log \
+         -v /etc/dhclient/v6/%i.conf:/etc/dhclient.conf \
+         pablocouto/coreos-dhclient-v6 -P -cf /etc/dhclient.conf %i
+
+ExecStop=/usr/bin/docker stop %p.%i.service
+ExecStop=/usr/bin/docker rm %p.%i.service
+
+[Install]
+WantedBy=multi-user.target
